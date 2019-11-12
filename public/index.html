@@ -1,17 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:400,500,700,400italic|Material+Icons">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+          integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
     <title>menu-driven</title>
-  </head>
-  <body>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+</head>
+
+<body>
     <noscript>
-      <strong>We're sorry but menu-driven doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+        <strong>We're sorry but menu-driven doesn't work properly without JavaScript enabled. Please enable it to
+            continue.</strong>
     </noscript>
-    <div id="app"></div>
-    <!-- built files will be auto injected -->
-  </body>
+    <!--div id="app">   
+    </div-->
+    <!-- built files will be auto injected -->    
+    <div class="container" id="myApp">
+        <div class="row">
+            <div class="col-12">
+                <div class="clearfix"> 
+                    <button class="btn btn-info float-right" id="btnAdd" v-on:click="AddRow">新增</button>
+                </div>
+                <hr />
+
+                <form method="post" action="#">
+                    <table class="table table-striped table-bordered table-hover">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>And、OR</th>
+                                <th>查詢欄位</th>
+                                <th>條件運算子</th>
+                                <th>欄位比較值</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+              <!--通常迴圈中會處理複雜邏輯，必須小心 v-for不足以應付，複雜邏輯須事先在Controller就處理完畢*/-->
+                            <tr v-for="(user,index) in users" v-cloak >
+                                <td>
+                                    <!--後端使用v_id資料識別資料-->
+                                    <!--input type="text" class="form-control" name="userName" placeholder="請輸入姓名" v-model="user.userName" /-->
+                                    <select class="form-control" name="andorOP" v-model="user.andorOP">
+                                        <option value='-1'>請選擇</option>
+                                        <option>&&</option>
+                                        <option>||</option>
+                                    </select>
+
+                                </td>
+                                <td>
+                                    <select class="form-control" name="topicColumn" v-model="user.topicColumn">
+                                        <option :value='-1'>請選擇</option>
+                                        <option v-for="(column,index) in columns" :value="column">{{column.text}}</option>                                        
+                                    </select>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <select class="form-control" name="conditionOP" v-model="user.conditionOP">
+                                        <option :value='-1'>請選擇</option>
+                                        <option>equal</option>
+                                        <option>not equal</option>
+                                        <option>></option>
+                                        <option>>=</option>
+                                        <option><</option>
+                                        <option><=</option>
+                                    </select>
+                                </td>                              
+                                <td class="text-center align-middle">     
+                                    <!-- <div class="custom-control custom-checkbox"> -->
+                                        <!--input type="checkbox" class="custom-control-input"  v-bind:id="('compareValue_'+user.v_id)"  v-bind:name="('compareValue_'+ user.v_id)"  v-model="user.isOver18" />
+                                        <label class="custom-control-label" v-bind:for="'compareValue_'+user.v_id"></label-->
+                                        <input type="text" class="form-control" name="compareValue" placeholder="請輸入比較的值" v-model="user.compareValue" />                                        
+                                    <!-- </div> -->
+                                </td>
+                                <td>
+                                    <button class="btn btn-danger" v-on:click="DeleteRow(user,index)" type="button">刪除</button>
+                                </td>                                
+                            </tr>                            
+                        </tbody>                        
+                    </table>
+                    <hr />
+
+                    <div class="clearfix">
+                        <!--資料都存放在JS裡了，所以使用Ajax送出資料，不仰賴表單提交，因為表單提交動作和畫面的輸入欄位有很大藕合性，但Vue.js就是要讓開發者不用去管畫面的處理-->
+                        <button class="btn btn-primary float-right" id="btnSubmit" type="button" v-on:click="AjaxSubmit">Ajax儲存</button>
+                    </div>
+                    <div v-html="showResult"> 
+                    </div>
+                    
+                </form>            
+            </div>
+        </div>
+    </div>
+
+    
+
+    <script type="text/javascript">
+        /*Vue.js以操作資料為主*/
+        let users = [];
+        let columns = [
+            {text: '病歷時間', type: 'time'},
+            {text: '病患年齡', type: 'string'}
+        ];
+        let myApp = new Vue({
+            el: "#myApp", /*必填*/
+            data: {
+                users: users,
+                columns: columns,
+                showResult:""
+            },
+            //事件處理
+            methods: {
+                AddRow: function () {                    
+                    let v_id = Date.now();//產生一個畫面用的不重複id                    
+                    this.users.push({ v_id: v_id, andorOP: "-1", topicColumn: "-1", conditionOP: "-1", compareValue: ""});//新增資料到陣列就好，不必組html字串
+                },
+                DeleteRow: function (user,index) {
+                    let vm = this;
+                    //要刪除的陣列索引
+                    //let delIndex = vm.users.findIndex(function (item, index) {
+                    //    return user.v_id === item.v_id;
+                    // });
+									   let delIndex=index;
+                    //從集合中刪除物件
+                    vm.users.splice(delIndex, 1);//刪除資料，畫面會跟著變動
+
+                },
+                AjaxSubmit: function () {
+                    let vm = this; 
+                     vm.showResult =  JSON.stringify(vm.users);//序列化JSON字串
+                }
+            } 
+        });
+    </script>
+</body>
 </html>
